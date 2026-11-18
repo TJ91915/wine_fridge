@@ -72,7 +72,7 @@ EOF
 cd /tmp/wf && echo '{"action":"claim"}' | python3 sheet.py | tee claim.json
 ```
 
-- If `item` is `null`, there's nothing to do. Say so in one line and stop.
+- If `item` is `null`, there's nothing for this run to do. Say so in one line, quoting the reply's `message` if there is one (it says which rows another run is already working on), and stop. Don't retry the claim.
 - Otherwise:
   - `item.kind` is `"bottle"` or `"can"`
   - `item.row` is what's already known
