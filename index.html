@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wine Fridge</title>
+<meta name="theme-color" content="#151213">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<style>
+:root{
+  --bg:#f5f1ec; --surface:#ffffff; --ink:#1e1a17; --muted:#6d655d; --line:#e3dbd1;
+  --accent:#7b1e2e; --accent-ink:#ffffff; --soon:#e9a21f; --shadow:0 10px 30px rgba(40,25,10,.12);
+  --cab:#1b1817; --cab-2:#262120; --shelf:#9b7653;
+  --red:#7d1d30; --white:#e9dc9c; --rose:#eda2a8; --sparkling:#d1aa3f; --orange:#d9893b; --dessert:#9a5a1c; --other:#8c8c8c;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#110e0f; --surface:#1c1819; --ink:#f2ede7; --muted:#a59c92; --line:#2f2a29;
+    --accent:#d9677a; --accent-ink:#1a0a0d; --shadow:0 10px 30px rgba(0,0,0,.5); --cab:#0b0a0a; --cab-2:#181514;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#110e0f; --surface:#1c1819; --ink:#f2ede7; --muted:#a59c92; --line:#2f2a29;
+  --accent:#d9677a; --accent-ink:#1a0a0d; --shadow:0 10px 30px rgba(0,0,0,.5); --cab:#0b0a0a; --cab-2:#181514;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;
+  padding:max(16px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
+.wrap{max-width:560px;margin:0 auto}
+button{font:inherit;color:inherit}
+a{color:var(--accent)}
+
+/* Header */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 0 14px}
+h1{font-family:var(--serif);font-weight:600;font-size:28px;line-height:1.1;margin:0}
+.sub{margin:4px 0 0;color:var(--muted);font-size:14px}
+.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px;flex:none}
+.seg button{border:0;background:none;padding:6px 12px;border-radius:999px;font-size:13px;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+.note{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--muted);margin:0 0 12px}
+
+/* Filter chips */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;margin:0 -16px;padding-left:16px;padding-right:16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);
+  border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+.chip .d{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.chip b{font-weight:600}
+.chip[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.chip.soon .d{background:none;box-shadow:inset 0 0 0 2px var(--soon)}
+
+/* Cabinet */
+.cabinet{background:linear-gradient(160deg,var(--cab-2),var(--cab) 60%);border-radius:20px;padding:10px 10px 12px;
+  box-shadow:var(--shadow),inset 0 0 0 1px rgba(255,255,255,.06);position:relative;overflow:hidden}
+.cabinet::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,rgba(255,255,255,.07) 0 18%,transparent 34% 100%)}
+.shelf{position:relative;padding:10px 4px 9px 22px;border-bottom:5px solid var(--shelf);
+  border-radius:0 0 3px 3px;margin-bottom:8px;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.shelf-n{position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:600;
+  color:rgba(255,255,255,.35);width:14px;text-align:center;letter-spacing:.02em}
+.row{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:6px}
+.slot,.bottle{aspect-ratio:1;border-radius:50%;width:100%;max-width:52px;justify-self:center}
+.slot{border:1.5px dashed rgba(255,255,255,.12)}
+.bottle{--c:var(--red);--t:#fff;border:0;padding:0;cursor:pointer;position:relative;
+  background:radial-gradient(circle at 34% 30%,color-mix(in srgb,var(--c) 55%,#fff) 0,var(--c) 42%,color-mix(in srgb,var(--c) 55%,#000) 100%);
+  box-shadow:inset 0 -2px 5px rgba(0,0,0,.45),0 2px 5px rgba(0,0,0,.6);
+  transition:opacity .2s,transform .15s,filter .2s;display:grid;place-items:center}
+.bottle::before{content:"";position:absolute;inset:26%;border-radius:50%;
+  background:radial-gradient(circle at 62% 66%,rgba(255,255,255,.2),rgba(0,0,0,.32) 70%)}
+.bottle span{position:relative;font-size:clamp(8px,2.5vw,11px);font-weight:700;color:var(--t);
+  letter-spacing:-.02em;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.bottle:active{transform:scale(.93)}
+.bottle.soon{outline:2px solid var(--soon);outline-offset:2px}
+.dim{opacity:.14;filter:saturate(.2)}
+.shelf.loose .shelf-n{writing-mode:vertical-rl;transform:translateY(-50%) rotate(180deg)}
+
+/* Cans */
+.cans{display:flex;flex-wrap:wrap;gap:12px 16px;padding:12px 4px 8px 22px;border-bottom:none;box-shadow:none;margin:0}
+.can-group{border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:5px;max-width:110px;transition:opacity .2s}
+.cluster{display:flex;flex-wrap:wrap;gap:3px;max-width:78px}
+.can{--c:#888;width:18px;height:18px;border-radius:50%;
+  background:radial-gradient(circle,#dfe2e5 0 34%,#9ea4a9 37% 47%,#cfd3d6 49% 53%,var(--c) 56% 100%);
+  box-shadow:0 1px 3px rgba(0,0,0,.6)}
+.can-more{font-size:10px;color:rgba(255,255,255,.6);align-self:center;margin-left:2px}
+.can-name{font-size:11px;color:rgba(255,255,255,.75);line-height:1.2;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin:12px 2px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px;background:var(--c)}
+.legend i.ring{background:none;box-shadow:inset 0 0 0 2px var(--soon)}
+
+/* List */
+.group h3{font-family:var(--serif);font-weight:600;font-size:18px;margin:18px 0 6px;display:flex;align-items:center;gap:8px}
+.group h3 small{font-family:system-ui,sans-serif;font-size:13px;color:var(--muted);font-weight:400}
+.items{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.items li+li{border-top:1px solid var(--line)}
+.item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;padding:11px 14px;cursor:pointer}
+.item .dot{flex:none;width:14px;height:14px;border-radius:50%;background:var(--c);box-shadow:inset 0 -1px 2px rgba(0,0,0,.3)}
+.item .txt{flex:1;min-width:0}
+.item .t1{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .t2{display:block;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .loc{flex:none;font-size:12px;color:var(--muted);text-align:right}
+.item .loc.soon{color:var(--soon);font-weight:600}
+.empty{color:var(--muted);text-align:center;padding:30px 0}
+
+/* Footer */
+footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:20px;font-size:13px;color:var(--muted)}
+.link{background:none;border:0;padding:6px 0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+/* Detail sheet */
+dialog{border:0;padding:0;margin:auto auto 0;width:100%;max-width:560px;max-height:88vh;background:var(--surface);color:var(--ink);
+  border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(10,6,6,.5)}
+dialog[open]{animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+@media (min-width:640px){dialog{margin:auto;border-radius:22px}}
+.sheet{padding:10px 20px max(22px,env(safe-area-inset-bottom))}
+.grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 12px}
+.sh-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:color-mix(in srgb,var(--c) 22%,transparent)}
+.pill::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--c)}
+.badge{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--bg);color:var(--muted)}
+.badge.soon,.badge.past{background:color-mix(in srgb,var(--soon) 20%,transparent);color:color-mix(in srgb,var(--soon) 70%,var(--ink))}
+.badge.ready{background:color-mix(in srgb,#3c9a5f 18%,transparent);color:color-mix(in srgb,#3c9a5f 75%,var(--ink))}
+.sheet h2{font-family:var(--serif);font-size:26px;line-height:1.15;margin:12px 0 2px;font-weight:600}
+.producer{margin:0;color:var(--muted)}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin:18px 0 6px}
+.facts div{min-width:0}
+.facts dt{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.facts dd{margin:2px 0 0;font-weight:500;overflow-wrap:anywhere}
+.facts .private dt::after{content:" · only you";text-transform:none;letter-spacing:0}
+.notes{margin:14px 0 0;padding:12px 14px;background:var(--bg);border-radius:12px;font-family:var(--serif);font-size:16px}
+.actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn{flex:1;min-width:140px;display:inline-flex;justify-content:center;align-items:center;gap:6px;padding:12px 16px;border-radius:12px;
+  border:1px solid var(--line);background:var(--bg);color:var(--ink);text-decoration:none;font-weight:600;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.confirm{background:var(--soon);border-color:var(--soon);color:#1a1200}
+.btn[disabled]{opacity:.6}
+.close{position:absolute;right:12px;top:10px;border:0;background:var(--bg);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1;color:var(--muted)}
+
+.toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;transition:.25s;z-index:10;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 id="title">Wine Fridge</h1>
+      <p class="sub" id="summary">Loading…</p>
+    </div>
+    <div class="seg" role="group" aria-label="View">
+      <button data-view="fridge" aria-pressed="true">Fridge</button>
+      <button data-view="list" aria-pressed="false">List</button>
+    </div>
+  </header>
+
+  <p class="note" id="demoNote" hidden>Showing sample bottles. Add your Apps Script URL to <code>API_URL</code> to go live. Demo owner PIN: 1234.</p>
+
+  <nav class="chips" id="chips" aria-label="Filter"></nav>
+
+  <main>
+    <section id="fridgeView">
+      <div class="cabinet" id="cabinet"></div>
+      <div class="legend" id="legend"></div>
+    </section>
+    <section id="listView" hidden></section>
+  </main>
+
+  <footer>
+    <span><span id="updated"></span> · <button class="link" id="refresh">Refresh</button></span>
+    <button class="link" id="ownerBtn">Owner</button>
+  </footer>
+</div>
+
+<dialog id="sheet" aria-labelledby="sheetTitle"><div class="sheet" id="sheetBody"></div></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ===== Config ===== */
+const API_URL = 'https://script.google.com/macros/s/AKfycbzsGdN76CpqTRXunofU5rnXN1Wubmop6a_jLO4yqJxWI0eIrzZVTlkt_6eN7GFFCJkmog/exec';            // ← paste your Apps Script Web app URL (ends in /exec)
+const DEMO_PIN = '1234';       // only used while API_URL is empty
+const CURRENCY = 'GBP';
+
+/* ===== Sample data (used until API_URL is set) ===== */
+const SAMPLE = {
+  title:'Wine Fridge', shelves:[8,8,8,8], owner:false,
+  bottles:[
+    {id:'b1',shelf:1,slot:1,type:'Sparkling',producer:'Bollinger',name:'Special Cuvée',vintage:'NV',region:'Champagne',country:'France',grape:'Pinot Noir, Chardonnay, Meunier',abv:12,size:'75cl',rating:5,notes:'Saving for a birthday.',price:52},
+    {id:'b2',shelf:1,slot:2,type:'Sparkling',producer:'Nyetimber',name:'Classic Cuvée',vintage:'NV',region:'West Sussex',country:'England',grape:'Chardonnay, Pinot Noir',abv:12,size:'75cl',rating:4,price:38},
+    {id:'b3',shelf:1,slot:4,type:'White',producer:'Cloudy Bay',name:'Sauvignon Blanc',vintage:2024,region:'Marlborough',country:'New Zealand',grape:'Sauvignon Blanc',abv:13.5,size:'75cl',drink_from:2025,drink_to:2026,rating:4,price:24},
+    {id:'b4',shelf:1,slot:5,type:'White',producer:'Domaine Laroche',name:'Chablis Saint Martin',vintage:2022,region:'Burgundy',country:'France',grape:'Chardonnay',abv:12.5,size:'75cl',drink_from:2024,drink_to:2029,price:22},
+    {id:'b5',shelf:1,slot:6,type:'White',producer:'Dr. Loosen',name:'Wehlener Sonnenuhr Riesling Kabinett',vintage:2021,region:'Mosel',country:'Germany',grape:'Riesling',abv:8.5,size:'75cl',drink_from:2023,drink_to:2035,rating:5,notes:'Off-dry. Great with Thai food.',price:21},
+    {id:'b6',shelf:1,slot:8,type:'Rosé',producer:"Château d'Esclans",name:'Whispering Angel',vintage:2024,region:'Provence',country:'France',grape:'Grenache, Cinsault',abv:13,size:'75cl',drink_to:2026,price:20},
+    {id:'b7',shelf:2,slot:1,type:'White',producer:'Domaine Weinbach',name:'Gewurztraminer',vintage:2020,region:'Alsace',country:'France',grape:'Gewürztraminer',abv:13.5,size:'75cl',drink_from:2022,drink_to:2027,price:30},
+    {id:'b8',shelf:2,slot:3,type:'Red',producer:'Catena',name:'Malbec',vintage:2021,region:'Mendoza',country:'Argentina',grape:'Malbec',abv:13.5,size:'75cl',drink_from:2023,drink_to:2028,rating:4,price:16},
+    {id:'b9',shelf:2,slot:4,type:'Red',producer:'Felton Road',name:'Bannockburn Pinot Noir',vintage:2022,region:'Central Otago',country:'New Zealand',grape:'Pinot Noir',abv:14,size:'75cl',drink_from:2025,drink_to:2034,rating:5,price:45},
+    {id:'b10',shelf:2,slot:5,type:'Red',producer:'E. Guigal',name:'Côtes du Rhône',vintage:2020,region:'Rhône',country:'France',grape:'Syrah, Grenache',abv:14,size:'75cl',drink_from:2022,drink_to:2025,notes:'Weeknight bottle.',price:13},
+    {id:'b11',shelf:2,slot:7,type:'Orange',producer:'Gravner',name:'Ribolla Gialla',vintage:2015,region:'Friuli',country:'Italy',grape:'Ribolla Gialla',abv:14,size:'75cl',drink_from:2022,drink_to:2035,price:60},
+    {id:'b12',shelf:3,slot:1,type:'Red',producer:'Marqués de Murrieta',name:'Reserva',vintage:2019,region:'Rioja',country:'Spain',grape:'Tempranillo',abv:14,size:'75cl',drink_from:2023,drink_to:2032,rating:4,price:24},
+    {id:'b13',shelf:3,slot:2,type:'Red',producer:'Marqués de Murrieta',name:'Reserva',vintage:2019,region:'Rioja',country:'Spain',grape:'Tempranillo',abv:14,size:'75cl',drink_from:2023,drink_to:2032,rating:4,price:24},
+    {id:'b14',shelf:3,slot:3,type:'Red',producer:'Château Musar',name:'Château Musar',vintage:2016,region:'Bekaa Valley',country:'Lebanon',grape:'Cabernet Sauvignon, Cinsault, Carignan',abv:14,size:'75cl',drink_from:2024,drink_to:2040,notes:'Decant an hour ahead.',price:42},
+    {id:'b15',shelf:3,slot:5,type:'Red',producer:'G.D. Vajra',name:'Barolo Albe',vintage:2020,region:'Piedmont',country:'Italy',grape:'Nebbiolo',abv:14,size:'75cl',drink_from:2025,drink_to:2035,rating:4,price:39},
+    {id:'b16',shelf:3,slot:6,type:'Red',producer:'Penfolds',name:'Bin 389',vintage:2020,region:'South Australia',country:'Australia',grape:'Cabernet Sauvignon, Shiraz',abv:14.5,size:'75cl',drink_from:2026,drink_to:2040,price:55},
+    {id:'b17',shelf:4,slot:1,type:'Red',producer:'Château Léoville Barton',name:'Saint-Julien',vintage:2016,region:'Bordeaux',country:'France',grape:'Cabernet Sauvignon, Merlot',abv:13.5,size:'75cl',drink_from:2027,drink_to:2045,notes:'Do not touch until 2027.',price:95},
+    {id:'b18',shelf:4,slot:2,type:'Red',producer:'Ridge',name:'Monte Bello',vintage:2019,region:'Santa Cruz Mountains',country:'USA',grape:'Cabernet Sauvignon',abv:13.5,size:'75cl',drink_from:2029,drink_to:2050,price:180},
+    {id:'b19',shelf:4,slot:5,type:'Dessert',producer:'Château Suduiraut',name:'Sauternes',vintage:2015,region:'Bordeaux',country:'France',grape:'Sémillon, Sauvignon Blanc',abv:14,size:'37.5cl',drink_from:2020,drink_to:2045,rating:5,price:32},
+    {id:'b20',shelf:4,slot:7,type:'Dessert',producer:"Taylor's",name:'10 Year Old Tawny Port',vintage:'NV',region:'Douro',country:'Portugal',grape:'Touriga Nacional',abv:20,size:'75cl',notes:'Open — keep in fridge, finish within 6 weeks.',price:22}
+  ],
+  cans:[
+    {id:'c1',name:'Neck Oil',brewer:'Beavertown',style:'Session IPA',abv:4.3,size:'330ml',qty:6,colour:'#2bb3c0'},
+    {id:'c2',name:'Draught',brewer:'Guinness',style:'Stout',abv:4.2,size:'440ml',qty:4,colour:'#1d1d1d'},
+    {id:'c3',name:'Gold',brewer:'Thatchers',style:'Cider',abv:4.8,size:'440ml',qty:3,colour:'#d4a017'},
+    {id:'c4',name:'Gin & Tonic',brewer:'Sipsmith',style:'Premix',abv:5,size:'250ml',qty:2,colour:'#3f6fb5'}
+  ]
+};
+
+/* ===== Types ===== */
+const TYPES = {
+  sparkling:{label:'Sparkling',c:'var(--sparkling)',t:'#2b1f00'},
+  white:{label:'White',c:'var(--white)',t:'#3b3310'},
+  rose:{label:'Rosé',c:'var(--rose)',t:'#4a1820'},
+  orange:{label:'Orange',c:'var(--orange)',t:'#2e1600'},
+  red:{label:'Red',c:'var(--red)',t:'#fff'},
+  dessert:{label:'Dessert & fortified',c:'var(--dessert)',t:'#fff'},
+  other:{label:'Other',c:'var(--other)',t:'#fff'}
+};
+const ORDER = ['sparkling','white','rose','orange','red','dessert','other'];
+const typeKey = t => {
+  t = String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+  if (TYPES[t]) return t;
+  if (/^(spark|champ|fizz|cava|prosecco|cremant)/.test(t)) return 'sparkling';
+  if (t.startsWith('ros')) return 'rose';
+  if (/^(dessert|sweet|fort|port|sherry|sauternes)/.test(t)) return 'dessert';
+  return 'other';
+};
+
+/* ===== Helpers ===== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl = u => /^https?:\/\//i.test(String(u||'').trim()) ? String(u).trim() : '';
+const store = {
+  get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k){ try { localStorage.removeItem(k); } catch {} }
+};
+const CACHE_KEY = 'wineFridge:data', PIN_KEY = 'wineFridge:pin';
+const isDemo = !API_URL;
+
+function shortVintage(v){
+  const s = String(v ?? '').trim();
+  if (/^\d{4}$/.test(s)) return '’' + s.slice(2);
+  if (/^nv$/i.test(s)) return 'NV';
+  return '';
+}
+function status(b){
+  const y = new Date().getFullYear(), f = parseInt(b.drink_from), t = parseInt(b.drink_to);
+  if (t && y > t) return {k:'past', label:'Past its best', soon:true};
+  if (t && t - y <= 1) return {k:'soon', label: t === y ? 'Drink this year' : 'Drink by ' + t, soon:true};
+  if (f && y < f) return {k:'young', label:'Wait until ' + f};
+  if (f || t) return {k:'ready', label:'Ready to drink'};
+  return null;
+}
+const sameName = b => String(b.name||'').trim().toLowerCase() === String(b.producer||'').trim().toLowerCase();
+const bottleTitle = b => b.name && !sameName(b) ? `${b.producer ? b.producer + ' ' : ''}${b.name}` : (b.producer || b.name || 'Unnamed');
+const fmtPct = v => { let n = Number(v); if (!isFinite(n)) return esc(v); if (n > 0 && n < 1) n *= 100; return (Math.round(n*10)/10) + '%'; };
+const fmtMoney = v => { const n = Number(v); return isFinite(n) ? new Intl.NumberFormat(undefined,{style:'currency',currency:CURRENCY}).format(n) : esc(v); };
+const stars = r => { const n = Math.max(0, Math.min(5, Math.round(Number(r)))); return n ? '★'.repeat(n) + '<span style="opacity:.25">' + '★'.repeat(5-n) + '</span>' : ''; };
+
+let toastTimer;
+function toast(msg){
+  const el = $('#toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ===== State ===== */
+let data = null, filter = 'all', view = 'fridge', owner = false, updatedAt = null;
+const pin = () => store.get(PIN_KEY);
+const visibleCans = () => (data.cans || []).filter(c => Number(c.qty ?? 1) > 0);
+const matches = b => filter === 'all' || (filter === 'soon' ? !!status(b)?.soon : typeKey(b.type) === filter);
+
+/* ===== Render ===== */
+function render(){
+  if (!data) return;
+  $('#title').textContent = data.title || 'Wine Fridge';
+  document.title = data.title || 'Wine Fridge';
+  const nb = data.bottles.length, nc = visibleCans().reduce((a,c) => a + (Number(c.qty) || 1), 0);
+  $('#summary').textContent = [`${nb} bottle${nb === 1 ? '' : 's'}`, nc ? `${nc} can${nc === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
+  $('#ownerBtn').textContent = owner ? 'Owner ✓' : 'Owner';
+  renderChips(); renderFridge(); renderList(); renderUpdated();
+}
+
+function renderChips(){
+  const counts = {}; let soon = 0;
+  data.bottles.forEach(b => { const k = typeKey(b.type); counts[k] = (counts[k]||0) + 1; if (status(b)?.soon) soon++; });
+  if (filter !== 'all' && filter !== 'soon' && !counts[filter]) filter = 'all';
+  if (filter === 'soon' && !soon) filter = 'all';
+  let h = `<button class="chip" data-f="all" aria-pressed="${filter==='all'}">All <b>${data.bottles.length}</b></button>`;
+  if (soon) h += `<button class="chip soon" data-f="soon" aria-pressed="${filter==='soon'}"><span class="d"></span>Drink soon <b>${soon}</b></button>`;
+  ORDER.forEach(k => { if (counts[k]) h += `<button class="chip" data-f="${k}" aria-pressed="${filter===k}" style="--c:${TYPES[k].c}"><span class="d"></span>${TYPES[k].label} <b>${counts[k]}</b></button>`; });
+  $('#chips').innerHTML = h;
+}
+
+function bottleEl(b){
+  const k = typeKey(b.type), T = TYPES[k], st = status(b);
+  const label = `${bottleTitle(b)} ${b.vintage ?? ''}, ${T.label}${st ? ', ' + st.label : ''}`;
+  return `<button class="bottle${st?.soon ? ' soon' : ''}${matches(b) ? '' : ' dim'}" data-kind="bottle" data-id="${esc(b.id)}"
+    style="--c:${T.c};--t:${T.t}" aria-label="${esc(label)}"><span>${esc(shortVintage(b.vintage))}</span></button>`;
+}
+
+function renderFridge(){
+  const shelves = (data.shelves && data.shelves.length) ? data.shelves : [8,8,8,8];
+  const placed = new Map(), loose = [];
+  data.bottles.forEach(b => {
+    const s = parseInt(b.shelf), sl = parseInt(b.slot), key = s + ':' + sl;
+    if (s >= 1 && s <= shelves.length && sl >= 1 && sl <= shelves[s-1] && !placed.has(key)) placed.set(key, b);
+    else loose.push(b);
+  });
+  let h = '';
+  shelves.forEach((n, i) => {
+    h += `<div class="shelf"><span class="shelf-n">${i+1}</span><div class="row" style="--n:${n}">`;
+    for (let j = 1; j <= n; j++) { const b = placed.get((i+1) + ':' + j); h += b ? bottleEl(b) : '<span class="slot"></span>'; }
+    h += '</div></div>';
+  });
+  if (loose.length) {
+    const n = Math.max(...shelves);
+    h += `<div class="shelf loose"><span class="shelf-n" title="No shelf/slot set">Other</span><div class="row" style="--n:${n}">${loose.map(bottleEl).join('')}</div></div>`;
+  }
+  const cans = visibleCans();
+  if (cans.length) {
+    h += `<div class="shelf cans">${cans.map(c => {
+      const q = Number(c.qty) || 1, show = Math.min(q, 8);
+      const col = /^#[0-9a-f]{3,8}$/i.test(String(c.colour||'').trim()) ? c.colour.trim() : '#8a8f94';
+      return `<button class="can-group${filter === 'all' ? '' : ' dim'}" data-kind="can" data-id="${esc(c.id)}" aria-label="${esc(`${c.brewer||''} ${c.name}, ${q} left`)}">
+        <span class="cluster">${`<span class="can" style="--c:${col}"></span>`.repeat(show)}${q > show ? `<span class="can-more">+${q-show}</span>` : ''}</span>
+        <span class="can-name">${esc(c.name)} · ${q}</span></button>`;
+    }).join('')}</div>`;
+  }
+  $('#cabinet').innerHTML = h;
+
+  const used = ORDER.filter(k => data.bottles.some(b => typeKey(b.type) === k));
+  $('#legend').innerHTML = used.map(k => `<span><i style="--c:${TYPES[k].c}"></i>${TYPES[k].label}</span>`).join('')
+    + (data.bottles.some(b => status(b)?.soon) ? '<span><i class="ring"></i>Drink soon</span>' : '');
+}
+
+function renderList(){
+  let h = '';
+  ORDER.forEach(k => {
+    const items = data.bottles.filter(b => typeKey(b.type) === k && matches(b))
+      .sort((a,b) => bottleTitle(a).localeCompare(bottleTitle(b)) || String(a.vintage).localeCompare(String(b.vintage)));
+    if (!items.length) return;
+    h += `<div class="group"><h3><span class="dot" style="width:12px;height:12px;border-radius:50%;background:${TYPES[k].c}"></span>${TYPES[k].label} <small>${items.length}</small></h3><ul class="items">`;
+    items.forEach(b => {
+      const st = status(b);
+      const sub = [b.vintage, b.region, b.grape].filter(Boolean).join(' · ');
+      const loc = st?.soon ? `<span class="loc soon">${esc(st.label)}</span>` : `<span class="loc">${b.shelf ? 'Shelf ' + esc(b.shelf) : ''}</span>`;
+      h += `<li><button class="item" data-kind="bottle" data-id="${esc(b.id)}"><span class="dot" style="--c:${TYPES[k].c}"></span>
+        <span class="txt"><span class="t1">${esc(bottleTitle(b))}</span><span class="t2">${esc(sub)}</span></span>${loc}</button></li>`;
+    });
+    h += '</ul></div>';
+  });
+  const cans = visibleCans();
+  if (cans.length && filter === 'all') {
+    h += `<div class="group"><h3>Cans <small>${cans.length}</small></h3><ul class="items">${cans.map(c => `
+      <li><button class="item" data-kind="can" data-id="${esc(c.id)}"><span class="dot" style="--c:${esc(c.colour || '#8a8f94')}"></span>
+      <span class="txt"><span class="t1">${esc([c.brewer, c.name].filter(Boolean).join(' '))}</span><span class="t2">${esc([c.style, c.abv ? fmtPct(c.abv) : ''].filter(Boolean).join(' · '))}</span></span>
+      <span class="loc">×${esc(c.qty ?? 1)}</span></button></li>`).join('')}</ul></div>`;
+  }
+  $('#listView').innerHTML = h || '<p class="empty">Nothing here.</p>';
+}
+
+function renderUpdated(){
+  if (!updatedAt) { $('#updated').textContent = ''; return; }
+  const mins = Math.round((Date.now() - updatedAt) / 60000);
+  $('#updated').textContent = isDemo ? 'Sample data' : mins < 1 ? 'Updated just now' : mins < 60 ? `Updated ${mins} min ago` : `Updated ${new Date(updatedAt).toLocaleString([], {dateStyle:'short',timeStyle:'short'})}`;
+}
+
+/* ===== Detail sheet ===== */
+const fact = (label, val, priv) => val ? `<div${priv ? ' class="private"' : ''}><dt>${label}</dt><dd>${val}</dd></div>` : '';
+
+function openDetail(kind, id){
+  const list = kind === 'can' ? data.cans : data.bottles;
+  const it = list.find(x => String(x.id) === String(id));
+  if (!it) return;
+  let h = '<div class="grab"></div><button class="close" aria-label="Close" data-close>×</button>';
+  let lookup;
+  if (kind === 'bottle') {
+    const T = TYPES[typeKey(it.type)], st = status(it);
+    const win = (it.drink_from || it.drink_to) ? `${esc(it.drink_from || '…')}–${esc(it.drink_to || '…')}` : '';
+    h += `<div class="sh-head"><span class="pill" style="--c:${T.c}">${T.label}</span>${st ? `<span class="badge ${st.k}">${esc(st.label)}</span>` : ''}</div>
+      <h2 id="sheetTitle">${esc(it.name || it.producer)}</h2>
+      <p class="producer">${esc([it.name && !sameName(it) ? it.producer : '', it.vintage].filter(Boolean).join(' · '))}</p>
+      <dl class="facts">
+        ${fact('Where', it.shelf ? `Shelf ${esc(it.shelf)}${it.slot ? ', slot ' + esc(it.slot) : ''}` : '')}
+        ${fact('Region', esc([it.region, it.country].filter(Boolean).join(', ')))}
+        ${fact('Grape', esc(it.grape))}
+        ${fact('Drinking window', win)}
+        ${fact('ABV', it.abv ? fmtPct(it.abv) : '')}
+        ${fact('Size', esc(it.size))}
+        ${fact('Rating', stars(it.rating))}
+        ${owner ? fact('Paid', it.price != null ? fmtMoney(it.price) : '', true) + fact('Bought', esc(it.bought), true) : ''}
+      </dl>`;
+    lookup = 'https://www.vivino.com/search/wines?q=' + encodeURIComponent([it.producer, it.name, it.vintage].filter(Boolean).join(' '));
+  } else {
+    h += `<div class="sh-head"><span class="pill" style="--c:${esc(it.colour || '#8a8f94')}">${esc(it.style || 'Can')}</span><span class="badge">${esc(it.qty ?? 1)} left</span></div>
+      <h2 id="sheetTitle">${esc(it.name)}</h2>
+      <p class="producer">${esc(it.brewer)}</p>
+      <dl class="facts">
+        ${fact('Where', 'Bottom shelf')}
+        ${fact('ABV', it.abv ? fmtPct(it.abv) : '')}
+        ${fact('Size', esc(it.size))}
+        ${fact('Style', esc(it.style))}
+      </dl>`;
+    lookup = 'https://www.google.com/search?q=' + encodeURIComponent([it.brewer, it.name].filter(Boolean).join(' '));
+  }
+  if (it.notes) h += `<p class="notes">${esc(it.notes)}</p>`;
+  const link = safeUrl(it.link) || lookup;
+  h += `<div class="actions"><a class="btn" href="${esc(link)}" target="_blank" rel="noopener">${safeUrl(it.link) ? 'More info' : 'Look it up'} ↗</a>
+    ${owner ? `<button class="btn primary" data-drink="${kind}" data-id="${esc(it.id)}">${kind === 'can' ? 'Had one' : 'Drank this one'}</button>` : ''}</div>`;
+  $('#sheetBody').innerHTML = h;
+  $('#sheet').showModal();
+}
+
+/* ===== Data loading ===== */
+async function api(body){
+  const r = await fetch(API_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(body)});
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'Request failed');
+  return j;
+}
+
+async function load(quiet){
+  if (isDemo) {
+    data = data || structuredClone(SAMPLE);
+    owner = pin() === DEMO_PIN; updatedAt = Date.now(); render(); return;
+  }
+  try {
+    let d;
+    if (pin()) {
+      try { d = (await api({action:'data', pin:pin()})).data; owner = true; }
+      catch (e) { if (/PIN/i.test(e.message)) { store.del(PIN_KEY); owner = false; } else throw e; }
+    }
+    if (!d) { const r = await fetch(API_URL + '?t=' + Date.now()); d = await r.json(); owner = false; }
+    data = d; updatedAt = Date.now();
+    store.set(CACHE_KEY, {data:d, at:updatedAt});
+    render();
+    if (!quiet) toast('Up to date');
+  } catch (e) {
+    if (!data) $('#summary').textContent = 'Couldn’t load the fridge. Check your connection.';
+    else toast('Couldn’t refresh, showing saved list');
+  }
+}
+
+async function drink(kind, id, btn){
+  if (!btn.classList.contains('confirm')) {
+    btn.classList.add('confirm'); btn.textContent = 'Tap again to confirm';
+    setTimeout(() => { if (btn.isConnected) { btn.classList.remove('confirm'); btn.textContent = kind === 'can' ? 'Had one' : 'Drank this one'; } }, 4000);
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    let msg;
+    if (isDemo) {
+      if (kind === 'can') { const c = data.cans.find(x => x.id === id); c.qty = Math.max(0, (Number(c.qty)||1) - 1); msg = c.qty + ' left'; }
+      else { data.bottles = data.bottles.filter(x => x.id !== id); msg = 'Removed from the fridge'; }
+    } else {
+      const r = await api({action:'drink', pin:pin(), kind, id});
+      data = r.data; msg = r.message; updatedAt = Date.now(); store.set(CACHE_KEY, {data, at:updatedAt});
+    }
+    $('#sheet').close(); render(); toast('Cheers! ' + msg);
+  } catch (e) {
+    btn.disabled = false; btn.classList.remove('confirm'); btn.textContent = 'Try again';
+    toast(e.message);
+  }
+}
+
+async function toggleOwner(){
+  if (owner) {
+    if (confirm('Lock owner mode on this phone?')) { store.del(PIN_KEY); owner = false; await load(true); render(); toast('Locked'); }
+    return;
+  }
+  const p = (prompt('Owner PIN') || '').trim();
+  if (!p) return;
+  if (isDemo) {
+    if (p !== DEMO_PIN) return toast('Wrong PIN');
+    store.set(PIN_KEY, p); owner = true; render(); return toast('Owner mode on');
+  }
+  try {
+    const r = await api({action:'data', pin:p});
+    store.set(PIN_KEY, p); owner = true; data = r.data; updatedAt = Date.now();
+    store.set(CACHE_KEY, {data, at:updatedAt}); render(); toast('Owner mode on');
+  } catch (e) { toast(/PIN/i.test(e.message) ? 'Wrong PIN' : 'Couldn’t check PIN'); }
+}
+
+/* ===== Events ===== */
+document.addEventListener('click', e => {
+  const chip = e.target.closest('[data-f]');
+  if (chip) { filter = chip.dataset.f === filter ? 'all' : chip.dataset.f; render(); return; }
+  const v = e.target.closest('[data-view]');
+  if (v) {
+    view = v.dataset.view; store.set('wineFridge:view', view);
+    document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === view));
+    $('#fridgeView').hidden = view !== 'fridge'; $('#listView').hidden = view !== 'list'; return;
+  }
+  const d = e.target.closest('[data-drink]');
+  if (d) { drink(d.dataset.drink, d.dataset.id, d); return; }
+  if (e.target.closest('[data-close]')) { $('#sheet').close(); return; }
+  const it = e.target.closest('[data-kind][data-id]');
+  if (it) openDetail(it.dataset.kind, it.dataset.id);
+});
+$('#sheet').addEventListener('click', e => { if (e.target === $('#sheet')) $('#sheet').close(); });
+$('#refresh').addEventListener('click', () => load(false));
+$('#ownerBtn').addEventListener('click', toggleOwner);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load(true); });
+setInterval(renderUpdated, 30000);
+
+/* ===== Boot: show saved copy instantly, then refresh ===== */
+(function boot(){
+  $('#demoNote').hidden = !isDemo;
+  const savedView = store.get('wineFridge:view');
+  if (savedView === 'list') document.querySelector('[data-view="list"]').click();
+  if (!isDemo) {
+    const c = store.get(CACHE_KEY);
+    if (c && c.data) { data = c.data; owner = !!(c.data.owner && pin()); updatedAt = c.at; render(); }
+  }
+  load(true);
+})();
+</script>
+</body>
+</html>
